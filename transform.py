@@ -18,6 +18,7 @@ from PIL import Image as img
 import matplotlib.pyplot as plt
 import matplotlib
 import sys
+import os
 import time
 import model
 import starnet_utils
@@ -49,7 +50,8 @@ def transform(input_path, output_path, mask_path = None, stride = 100):
         
         # restore current state of the model
         print("Restoring previous state of the model...")
-        saver.restore(sess, "./model.ckpt")
+        checkpoint = os.path.join(os.path.dirname(__file__), "model.ckpt")
+        saver.restore(sess, checkpoint)
         print("Done!")
         
         # read input image
