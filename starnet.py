@@ -94,12 +94,20 @@ if len(sys.argv) > 1:
     elif sys.argv[1] == 'transform':
         if len(sys.argv) < 3:
             print("")
-            print("Usage: python starnet.py transform <image>")
+            print("Usage: python starnet.py transform <image> [<output>] [<mask>]")
             print("Exiting...")
         else:
+            if len(sys.argv) == 3:
+                filename, ext = os.path.splitext(sys.argv[2])
+                output = "%s-starless%s" % (filename, ext)
+            else :
+                output = sys.argv[3]
+            mask = sys.argv[4] if len(sys.argv) == 5 else None
             start = time.time()
             import transform
-            transform.transform(image = sys.argv[2],
+            transform.transform(input_path = sys.argv[2],
+                                output_path = output,
+                                mask_path = mask,
                                 stride = stride)
             stop = time.time()
             t = float((stop - start) / 60)

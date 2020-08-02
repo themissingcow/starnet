@@ -28,7 +28,7 @@ tf.compat.v1.disable_eager_execution()
 WINDOW_SIZE = 256                      # Size of the image fed to net. Do not change until you know what you are doing! Default is 256
                                        # and changing this will force you to train the net anew.
 
-def transform(image, stride):
+def transform(input_path, output_path, mask_path = None, stride = 100):
     
     # placeholders for tensorflow
     X = tf.compat.v1.placeholder(tf.float32, shape = [None, WINDOW_SIZE, WINDOW_SIZE, 3], name = "X")
@@ -54,8 +54,8 @@ def transform(image, stride):
         
         # read input image
         
-        print("Opening input image...")
-        input_image = img.open(image)
+        print("Opening input image %s..." % input_path)
+        input_image = img.open(input_path)
         input = np.array(input_image, dtype = np.float32)
         
         pixel_type = np.uint8
@@ -145,18 +145,19 @@ def transform(image, stride):
         # leave only necessary part, without pads added earlier
         output = output[offset : - (offset + dh), offset : - (offset + dw), :]
         
-        print("Saving mask...")
-        # mask showing areas that were changed significantly
-        mask = (((backup * 255).astype(np.uint8) - (output * 255).astype(np.uint8)) > 25).astype(np.uint8)
-        mask = mask.max(axis = 2, keepdims = True)
-        mask = np.concatenate((mask, mask, mask), axis = 2)
-        img.fromarray(mask * 255).save(image + '_mask.tif')
-        print("Done!")
-
-        print("Saving output image [%dbit %s]..." % ( (pixel_type().itemsize * 8), "Y" if mono else "RGB" ) )
+        if mask_path :
+            print("Saving mask to %s..." % mask_path)
+            # mask showing areas that were changed significantly
+            mask = (((backup * 255).astype(np.uint8) - (output * 255).astype(np.uint8)) > 25).astype(np.uint8)
+            mask = mask.max(axis = 2, keepdims = True)
+            mask = np.concatenate((mask, mask, mask), axis = 2)
+            img.fromarray(mask * 255).save(mask_path)
+            print("Done!")
+        
+        print("Saving output image [%dbit %s] to %s..." % ( (pixel_type().itemsize * 8), "Y" if mono else "RGB", output_path ) )
         if mono:
             output = output[:,:,0]
         if outputscale is not None:
             output *= outputscale
-        img.fromarray( output.astype(pixel_type), mode=input_image.mode ).save(image + '_starless.tif')
+        img.fromarray( output.astype(pixel_type), mode=input_image.mode ).save(output_path)
         print("Done!")
