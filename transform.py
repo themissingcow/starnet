@@ -23,25 +23,28 @@ import time
 import model
 import starnet_utils
 
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+tf.compat.v1.disable_eager_execution()
+
 WINDOW_SIZE = 256                      # Size of the image fed to net. Do not change until you know what you are doing! Default is 256
                                        # and changing this will force you to train the net anew.
 
 def transform(image, stride):
     
     # placeholders for tensorflow
-    X = tf.placeholder(tf.float32, shape = [None, WINDOW_SIZE, WINDOW_SIZE, 3], name = "X")
-    Y = tf.placeholder(tf.float32, shape = [None, WINDOW_SIZE, WINDOW_SIZE, 3], name = "Y")
+    X = tf.compat.v1.placeholder(tf.float32, shape = [None, WINDOW_SIZE, WINDOW_SIZE, 3], name = "X")
+    Y = tf.compat.v1.placeholder(tf.float32, shape = [None, WINDOW_SIZE, WINDOW_SIZE, 3], name = "Y")
 
     # create model
     train, avers, outputs = model.model(X, Y)
     
     #initialize variables
-    init = tf.global_variables_initializer()
+    init = tf.compat.v1.global_variables_initializer()
     
     # create saver instance to load model parameters
-    saver = tf.train.Saver()
+    saver = tf.compat.v1.train.Saver()
 
-    with tf.Session() as sess:        
+    with tf.compat.v1.Session() as sess:        
         # initialize all variables and start training
         sess.run(init)
         
@@ -129,4 +132,3 @@ def transform(image, stride):
         mask = np.concatenate((mask, mask, mask), axis = 2)
         toimage(mask * 255, cmin = 0, cmax = 255).save('./' + image + '_mask.tif')
         print("Done!")
-    
