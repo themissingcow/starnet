@@ -16,7 +16,6 @@ import numpy as np
 import tensorflow as tf
 from PIL import Image as img
 import matplotlib.pyplot as plt
-from scipy.misc import toimage
 import matplotlib
 import sys
 import time
@@ -122,13 +121,13 @@ def transform(image, stride):
         output = output[offset : - (offset + dh), offset : - (offset + dw), :]
         
         print("Saving output image...")
-        toimage(output * 255, cmin = 0, cmax = 255).save('./' + image + '_starless.tif')
+        img.fromarray((output * 255).astype(np.uint8)).save('./' + image + '_starless.tif')
         print("Done!")
         
         print("Saving mask...")
         # mask showing areas that were changed significantly
-        mask = (((backup * 255).astype(np.int_) - (output * 255).astype(np.int_)) > 25).astype(np.int_)
+        mask = (((backup * 255).astype(np.uint8) - (output * 255).astype(np.uint8)) > 25).astype(np.uint8)
         mask = mask.max(axis = 2, keepdims = True)
         mask = np.concatenate((mask, mask, mask), axis = 2)
-        toimage(mask * 255, cmin = 0, cmax = 255).save('./' + image + '_mask.tif')
+        img.fromarray(mask * 255).save('./' + image + '_mask.tif')
         print("Done!")
