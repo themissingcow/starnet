@@ -3,8 +3,8 @@
 # 
 # StarNet is a neural network that can remove stars from images leaving only background.
 # 
-# Throughout the code all input and output images are 8 bits per channel tif images.
-# This code in original form will not read any images other than these (like jpeg, etc), but you can change that if you like.
+# The code attempts to support RGB (8bit) and single channel (8/16/32bit) input images.
+# Output will be the same format as the input.
 # 
 # Copyright (c) 2018 Nikita Misiura
 # http://www.astrobin.com/users/nekitmm/
@@ -53,16 +53,37 @@ def transform(image, stride):
         print("Done!")
         
         # read input image
+        
         print("Opening input image...")
-        input = np.array(img.open(image), dtype = np.float32)
+        input_image = img.open(image)
+        input = np.array(input_image, dtype = np.float32)
+        
+        pixel_type = np.uint8
+        if ";16" in input_image.mode:
+            pixel_type = np.uint16
+        elif input_image.mode == "I":
+            pixel_type = np.uint32
+        elif input_image.mode == "F":
+            pixel_type = np.float32
+        
+        # rescale to [0 1] based on image bit depth
+        outputscale = None
+        if pixel_type is not np.float32:
+            outputscale = 2**(pixel_type().itemsize * 8) - 1
+            input /= outputscale
+        
+        # tf expects rgb images
+        mono = len(input.shape) == 2
+        if mono :
+            input = np.dstack( ( input, input, input ) )
+        
         print("Done!")
         
-        # rescale to [-1, 1]
-        input /= 255
         # backup to use for mask
         backup = np.copy(input)
-        input = input * 2 - 1
         
+        # rescale to [-1, 1]
+        input = input * 2 - 1
         
         # now some tricky magic
         # image size is unlikely to be multiple of stride and hence we need to pad the image and
@@ -116,13 +137,13 @@ def transform(image, stride):
         
         # rescale back to [0, 1]
         output = (output + 1) / 2
+
+        output = output.clip(0, None)
+        if pixel_type is not np.float32 :
+            output = output.clip(None, 1)
         
         # leave only necessary part, without pads added earlier
         output = output[offset : - (offset + dh), offset : - (offset + dw), :]
-        
-        print("Saving output image...")
-        img.fromarray((output * 255).astype(np.uint8)).save('./' + image + '_starless.tif')
-        print("Done!")
         
         print("Saving mask...")
         # mask showing areas that were changed significantly
@@ -130,4 +151,12 @@ def transform(image, stride):
         mask = mask.max(axis = 2, keepdims = True)
         mask = np.concatenate((mask, mask, mask), axis = 2)
         img.fromarray(mask * 255).save('./' + image + '_mask.tif')
+        print("Done!")
+
+        print("Saving output image [%dbit %s]..." % ( (pixel_type().itemsize * 8), "Y" if mono else "RGB" ) )
+        if mono:
+            output = output[:,:,0]
+        if outputscale is not None:
+            output *= outputscale
+        img.fromarray( output.astype(pixel_type), mode=input_image.mode ).save('./' + image + '_starless.tif')
         print("Done!")
