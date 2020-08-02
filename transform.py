@@ -150,7 +150,7 @@ def transform(image, stride):
         mask = (((backup * 255).astype(np.uint8) - (output * 255).astype(np.uint8)) > 25).astype(np.uint8)
         mask = mask.max(axis = 2, keepdims = True)
         mask = np.concatenate((mask, mask, mask), axis = 2)
-        img.fromarray(mask * 255).save('./' + image + '_mask.tif')
+        img.fromarray(mask * 255).save(image + '_mask.tif')
         print("Done!")
 
         print("Saving output image [%dbit %s]..." % ( (pixel_type().itemsize * 8), "Y" if mono else "RGB" ) )
@@ -158,5 +158,5 @@ def transform(image, stride):
             output = output[:,:,0]
         if outputscale is not None:
             output *= outputscale
-        img.fromarray( output.astype(pixel_type), mode=input_image.mode ).save('./' + image + '_starless.tif')
+        img.fromarray( output.astype(pixel_type), mode=input_image.mode ).save(image + '_starless.tif')
         print("Done!")
