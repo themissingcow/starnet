@@ -52,7 +52,6 @@ def transform(input_path, output_path, mask_path = None, stride = 100):
         print("Restoring previous state of the model...")
         checkpoint = os.path.join(os.path.dirname(__file__), "model.ckpt")
         saver.restore(sess, checkpoint)
-        print("Done!")
         
         # read input image
         
@@ -78,8 +77,6 @@ def transform(input_path, output_path, mask_path = None, stride = 100):
         mono = len(input.shape) == 2
         if mono :
             input = np.dstack( ( input, input, input ) )
-        
-        print("Done!")
         
         # backup to use for mask
         backup = np.copy(input)
@@ -120,9 +117,13 @@ def transform(input_path, output_path, mask_path = None, stride = 100):
         tmp = np.zeros((1, WINDOW_SIZE, WINDOW_SIZE, 3), dtype = np.float)
         
         # here goes
+        last_progress = 0
         for i in range(ith):
             for j in range(itw):
-                print('Transforming input image... %d%%\r' % int((itw * i + j + 1) * 100 / (ith * itw)))
+                progress = int((itw * i + j + 1) * 100 / (ith * itw))
+                if progress - last_progress >= 5:
+                    print('Transforming input image... %d%%\r' % progress )
+                    last_progress = progress
                 
                 x = stride * i
                 y = stride * j
@@ -135,7 +136,6 @@ def transform(input_path, output_path, mask_path = None, stride = 100):
                 
                 # write transformed array to output
                 output[x + offset : x + stride + offset, y + offset: y + stride + offset, :] = result[0, offset : stride + offset, offset : stride + offset, :]
-        print("Transforming input image... Done!")
         
         # rescale back to [0, 1]
         output = (output + 1) / 2
@@ -154,7 +154,6 @@ def transform(input_path, output_path, mask_path = None, stride = 100):
             mask = mask.max(axis = 2, keepdims = True)
             mask = np.concatenate((mask, mask, mask), axis = 2)
             img.fromarray(mask * 255).save(mask_path)
-            print("Done!")
         
         print("Saving output image [%dbit %s] to %s..." % ( (pixel_type().itemsize * 8), "Y" if mono else "RGB", output_path ) )
         if mono:
@@ -162,4 +161,3 @@ def transform(input_path, output_path, mask_path = None, stride = 100):
         if outputscale is not None:
             output *= outputscale
         img.fromarray( output.astype(pixel_type), mode=input_image.mode ).save(output_path)
-        print("Done!")
